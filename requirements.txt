@@ -5,4 +5,5 @@ requests==2.31.0
 requests-html==0.10.0
 Flask==2.0.2
 webdriver-manager==4.0.1
+python-telegram-bot==20.7
 selenium==4.16.0
