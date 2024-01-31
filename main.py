@@ -3,23 +3,22 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.service import Service as ChromeService
 from telegram import Bot
-import asyncio
 import re
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 import urllib.parse
-from flask import Flask
+import time
 
 app = Flask(__name__)
 
 TOKEN = '5558634309:AAGC9BY28ru907q3hmhWwdS83F31cIjHuiQ'
 chat_ids = ['815189312']
 
-async def send_Error(chat_id, text, error):
+def send_Error(chat_id, text, error):
     bot = Bot(token=TOKEN)
-    await bot.send_message(chat_id=chat_id, text="Hubo un error al obtener los productos: " + str(text) + ". " + str(error))
+    bot.send_message(chat_id=chat_id, text="Hubo un error al obtener los productos: " + str(text) + ". " + str(error))
 
-async def send_message(chat_id, imagen, descripcion, precio_normal, precio_oferta, descuento, enlace):
+def send_message(chat_id, imagen, descripcion, precio_normal, precio_oferta, descuento, enlace):
     urlUnida = "https://guatemaladigital.com" + enlace
     message = f'<b>◄❖🌟【ＰＲＯＤＵＣＴＯ】🌟❖► </b>\n' \
             f'-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶-̶\n' \
@@ -32,9 +31,9 @@ async def send_message(chat_id, imagen, descripcion, precio_normal, precio_ofert
             f'-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷-̷  \nㅤ　'
 
     bot = Bot(token=TOKEN)
-    await bot.send_photo(chat_id=chat_id, photo=imagen, caption=message, parse_mode='HTML')
+    bot.send_photo(chat_id=chat_id, photo=imagen, caption=message, parse_mode='HTML')
 
-async def ejecutar_codigo(chat_id):
+def ejecutar_codigo(chat_id):
     driver = None
     datos = None
     try:
@@ -85,58 +84,57 @@ async def ejecutar_codigo(chat_id):
                 descuento = int(((precio_normal - precio_oferta) / precio_normal) * 100)
 
                 if descuento > 60:
-                    await send_message(chat_id, img_src, descripcion, precio_normal, precio_oferta, descuento, enlace)
+                    send_message(chat_id, img_src, descripcion, precio_normal, precio_oferta, descuento, enlace)
                     productos_procesados.add(descripcion)
 
             except ValueError as e:
-               await send_Error("1", ValueError)
+                send_Error("1", ValueError)
 
         if not productos_procesados:
-            await send_Error(chat_id, "No se encontraron productos con descuento", None)
+            send_Error(chat_id, "No se encontraron productos con descuento", None)
 
     except Exception as e:
-        await send_Error(chat_id, "Error al obtener productos2", e)
+        send_Error(chat_id, "Error al obtener productos2", e)
 
     finally:
-         if driver is not None:
+        if driver is not None:
             driver.quit()
-
 
 MAX_INTENTOS = 1
 ESPERA_ENTRE_INTENTOS = 40
 
-async def enviar_mensaje(chat_id, texto):
+def enviar_mensaje(chat_id, texto):
     bot = Bot(token=TOKEN)
-    await bot.send_message(chat_id=chat_id, text=texto)
+    bot.send_message(chat_id=chat_id, text=texto)
 
-async def ejecutar_codigo_con_reintentos(chat_id):
+def ejecutar_codigo_con_reintentos(chat_id):
     intentos = 0
     exitoso = False
     ultimo_error = None
 
-    await enviar_mensaje(chat_id, "Cargando Ofertas de Guatemala Digital... ⏳")
+    enviar_mensaje(chat_id, "Cargando Ofertas de Guatemala Digital... ⏳")
     while intentos < MAX_INTENTOS and not exitoso:
         try:
-            await ejecutar_codigo(chat_id)
+            ejecutar_codigo(chat_id)
             exitoso = True
         except Exception as e:
             ultimo_error = str(e)
-            await enviar_mensaje(chat_id, f"Hubo un error al obtener los productos. Intento {intentos + 1}.")
+            enviar_mensaje(chat_id, f"Hubo un error al obtener los productos. Intento {intentos + 1}.")
             print(ultimo_error)
             intentos += 1
-            await asyncio.sleep(ESPERA_ENTRE_INTENTOS)
+            time.sleep(ESPERA_ENTRE_INTENTOS)
 
     if not exitoso:
-        await enviar_mensaje(chat_id, f"Se agotaron los intentos. No se pudo completar la ejecución.\n\nÚltimo error: {ultimo_error}")
+        enviar_mensaje(chat_id, f"Se agotaron los intentos. No se pudo completar la ejecución.\n\nÚltimo error: {ultimo_error}")
         print(f"Último error: {ultimo_error}")
 
-async def ejecutar_codigo_con_reintentos_para_chat_ids():
+def ejecutar_codigo_con_reintentos_para_chat_ids():
     for chat_id in chat_ids:
-        await ejecutar_codigo_con_reintentos(chat_id)
+        ejecutar_codigo_con_reintentos(chat_id)
 
 @app.route("/start/")
 def start():
-    asyncio.run(ejecutar_codigo_con_reintentos_para_chat_ids())
+    ejecutar_codigo_con_reintentos_para_chat_ids()
     return "Proceso iniciado"
 
 if __name__ == "__main__":
