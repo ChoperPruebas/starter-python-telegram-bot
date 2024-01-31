@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from requests_html import AsyncHTMLSession
 from flask import Flask
-import asyncio
+import asyncio as asyncio_local
 import urllib.parse
 from telegram import Bot
 import re
@@ -112,7 +112,7 @@ async def ejecutar_codigo_con_reintentos(chat_id):
             ultimo_error = str(e)
             await enviar_mensaje(chat_id, f"Hubo un error. Intento {intentos + 1}.")
             intentos += 1
-            await asyncio.sleep(ESPERA_ENTRE_INTENTOS)
+            await asyncio_local.sleep(ESPERA_ENTRE_INTENTOS)
 
     if not exitoso:
         await enviar_mensaje(chat_id, f"Se agotaron los intentos. : {ultimo_error}")
@@ -124,7 +124,7 @@ async def ejecutar_codigo_con_reintentos_para_chat_ids():
 
 @app.route("/start/")
 def start():
-    asyncio.run(ejecutar_codigo_con_reintentos_para_chat_ids())
+    asyncio_local.run(ejecutar_codigo_con_reintentos_para_chat_ids())
     return "Proceso iniciado"
 
 if __name__ == "__main__":
